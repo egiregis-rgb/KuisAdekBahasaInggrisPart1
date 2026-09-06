@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chalkboard English Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --board:#1e2a38;
+    --board-dark:#141d27;
+    --chalk:#f5f3ee;
+    --chalk-dim:#c9d2d8;
+    --yellow:#f4c95d;
+    --coral:#ff8a80;
+    --mint:#7fe0c4;
+    --blue:#7fb6e8;
+    --danger:#ff6b6b;
+    --success:#7fe0c4;
+    --radius:16px;
+    font-family:'Nunito',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 12% 18%, rgba(255,255,255,0.05) 0, transparent 40%),
+      radial-gradient(circle at 85% 75%, rgba(255,255,255,0.04) 0, transparent 45%),
+      radial-gradient(circle at 60% 10%, rgba(255,255,255,0.03) 0, transparent 40%),
+      var(--board);
+    color:var(--chalk);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:32px 16px 60px;
+  }
+  .brand{
+    text-align:center;
+    margin-bottom:28px;
+  }
+  .brand h1{
+    font-family:'Kalam',cursive;
+    font-size:2.6rem;
+    margin:0;
+    letter-spacing:1px;
+    text-shadow:2px 2px 0 rgba(0,0,0,0.25);
+  }
+  .brand p{
+    margin:6px 0 0;
+    color:var(--chalk-dim);
+    font-size:1rem;
+  }
+  .stage{
+    width:100%;
+    max-width:640px;
+  }
+  .card{
+    background:rgba(255,255,255,0.04);
+    border:2px dashed rgba(245,243,238,0.35);
+    border-radius:var(--radius);
+    padding:28px 26px;
+    backdrop-filter:blur(2px);
+  }
+  .hidden{display:none !important;}
+
+  /* ---- Welcome / name entry ---- */
+  .field-label{
+    display:block;
+    font-weight:700;
+    margin-bottom:10px;
+    font-size:1.05rem;
+  }
+  input[type="text"]{
+    width:100%;
+    padding:12px 14px;
+    font-size:1.05rem;
+    font-family:'Nunito',sans-serif;
+    border-radius:10px;
+    border:2px solid rgba(245,243,238,0.4);
+    background:rgba(255,255,255,0.9);
+    color:#1e2a38;
+    outline:none;
+  }
+  input[type="text"]:focus{border-color:var(--yellow);}
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    border:none;
+    cursor:pointer;
+    font-family:'Nunito',sans-serif;
+    font-weight:800;
+    font-size:1rem;
+    padding:12px 22px;
+    border-radius:12px;
+    transition:transform .12s ease, box-shadow .12s ease;
+    box-shadow:0 4px 0 rgba(0,0,0,0.25);
+  }
+  .btn:active{transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,0.25);}
+  .btn:disabled{opacity:.4; cursor:not-allowed;}
+  .btn-primary{background:var(--yellow); color:#1e2a38;}
+  .btn-secondary{background:transparent; color:var(--chalk); border:2px solid rgba(245,243,238,0.5); box-shadow:none;}
+  .btn-secondary:active{transform:none;}
+  .btn-row{display:flex; gap:12px; flex-wrap:wrap; margin-top:22px;}
+
+  /* ---- Menu ---- */
+  .menu-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:6px;}
+  @media (max-width:520px){.menu-grid{grid-template-columns:1fr;}}
+  .quiz-tile{
+    border-radius:var(--radius);
+    border:2px dashed rgba(245,243,238,0.35);
+    padding:20px 16px;
+    text-align:center;
+    cursor:pointer;
+    background:rgba(255,255,255,0.03);
+    transition:transform .15s ease, background .15s ease;
+  }
+  .quiz-tile:hover{transform:translateY(-3px); background:rgba(255,255,255,0.07);}
+  .quiz-tile .emoji-icon{font-size:2.4rem; display:block; margin-bottom:8px;}
+  .quiz-tile h3{margin:4px 0 4px; font-family:'Kalam',cursive; font-size:1.3rem;}
+  .quiz-tile .status{font-size:.85rem; color:var(--chalk-dim);}
+  .quiz-tile .status.done{color:var(--mint); font-weight:700;}
+  .final-banner{
+    margin-top:20px; padding:16px; border-radius:12px;
+    border:2px dashed var(--yellow); text-align:center;
+  }
+
+  /* ---- Quiz screen ---- */
+  .progress-wrap{margin-bottom:18px;}
+  .progress-meta{
+    display:flex; justify-content:space-between; font-size:.85rem;
+    color:var(--chalk-dim); margin-bottom:6px;
+  }
+  .progress-bar{
+    width:100%; height:10px; border-radius:6px;
+    background:rgba(255,255,255,0.12); overflow:hidden;
+  }
+  .progress-fill{
+    height:100%; background:linear-gradient(90deg,var(--mint),var(--blue));
+    border-radius:6px; transition:width .3s ease;
+  }
+  .part-label{
+    display:inline-block; font-size:.78rem; font-weight:800;
+    letter-spacing:.3px; padding:4px 10px; border-radius:999px;
+    background:rgba(244,201,93,0.18); color:var(--yellow); margin-bottom:14px;
+  }
+  .question-text{
+    font-size:1.25rem; font-weight:700; line-height:1.4; margin:6px 0 18px;
+  }
+  .swatch-row{display:flex; gap:14px; align-items:center; justify-content:center; margin:10px 0 20px; flex-wrap:wrap;}
+  .swatch{
+    width:96px; height:96px; border-radius:14px;
+    border:3px dashed rgba(245,243,238,0.55);
+    box-shadow:inset 0 0 12px rgba(0,0,0,0.25);
+  }
+  .swatch.small{width:46px; height:46px; border-radius:10px;}
+  .plus-sign{font-size:1.6rem; font-weight:800; color:var(--chalk-dim);}
+
+  .options{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  @media (max-width:480px){.options{grid-template-columns:1fr;}}
+  .option{
+    display:flex; align-items:center; gap:10px;
+    background:rgba(255,255,255,0.9);
+    color:#1e2a38; font-weight:700;
+    border:2px solid transparent;
+    border-radius:12px; padding:13px 14px; cursor:pointer;
+    font-size:1rem; text-align:left;
+    transition:transform .12s ease, border-color .12s ease;
+  }
+  .option:hover{transform:translateY(-2px);}
+  .option .dot{width:18px; height:18px; border-radius:50%; flex-shrink:0; border:1px solid rgba(0,0,0,0.15);}
+  .option.selected{border-color:var(--yellow);}
+  .option.correct{background:#d9f7ec; border-color:var(--success);}
+  .option.incorrect{background:#ffe1e1; border-color:var(--danger);}
+  .option:disabled, .option.disabled{cursor:default; opacity:.9;}
+
+  .sa-row{display:flex; gap:10px; margin-top:6px;}
+  .sa-row input{flex:1;}
+  .feedback{
+    margin-top:14px; font-weight:700; padding:10px 14px;
+    border-radius:10px; font-size:.95rem;
+  }
+  .feedback.correct{background:rgba(127,224,196,0.18); color:var(--mint);}
+  .feedback.incorrect{background:rgba(255,107,107,0.18); color:var(--coral);}
+
+  /* ---- Result ---- */
+  .score-circle{
+    width:150px; height:150px; border-radius:50%;
+    border:6px solid var(--yellow);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    margin:10px auto 18px;
+  }
+  .score-circle .num{font-size:2.6rem; font-weight:800; font-family:'Kalam',cursive;}
+  .score-circle .out-of{font-size:.8rem; color:var(--chalk-dim);}
+  .result-msg{text-align:center; font-size:1.15rem; font-weight:700; margin-bottom:6px;}
+  .result-sub{text-align:center; color:var(--chalk-dim); margin-bottom:18px;}
+  details.review{margin-top:20px;}
+  details.review summary{cursor:pointer; font-weight:700; color:var(--chalk); margin-bottom:10px;}
+  .review-item{
+    padding:10px 12px; border-radius:10px; margin-bottom:8px; font-size:.92rem;
+    background:rgba(255,255,255,0.04); border-left:4px solid var(--chalk-dim);
+  }
+  .review-item.wrong{border-left-color:var(--coral);}
+  .review-item.right{border-left-color:var(--mint);}
+  .review-item .q{font-weight:700; margin-bottom:3px;}
+  .review-item .a{color:var(--chalk-dim);}
+
+  .chalk-tray{
+    display:flex; gap:8px; margin-top:44px; flex-wrap:wrap; justify-content:center; opacity:.8;
+  }
+  .chalk-stick{width:34px; height:10px; border-radius:5px;}
+  footer.note{margin-top:10px; font-size:.75rem; color:var(--chalk-dim); text-align:center;}
+</style>
+</head>
+<body>
+
+  <div class="brand">
+    <h1>ABC &amp; Colors Quiz</h1>
+    <p>A friendly English practice on the chalkboard</p>
+  </div>
+
+  <div class="stage">
+
+    <!-- WELCOME -->
+    <div id="screen-welcome" class="card">
+      <label class="field-label" for="nameInput">What's your name?</label>
+      <input type="text" id="nameInput" placeholder="Type your name here..." maxlength="30">
+      <div class="btn-row">
+        <button class="btn btn-primary" id="startBtn" disabled>Let's begin</button>
+      </div>
+    </div>
+
+    <!-- MENU -->
+    <div id="screen-menu" class="card hidden">
+      <p style="margin-top:0;">Hi <strong id="menuName"></strong>! Pick a quiz to start:</p>
+      <div class="menu-grid">
+        <div class="quiz-tile" data-quiz="alphabet">
+          <span class="emoji-icon">🔤</span>
+          <h3>Before &amp; After Alphabet</h3>
+          <div class="status" id="status-alphabet">Not started</div>
+        </div>
+        <div class="quiz-tile" data-quiz="colors">
+          <span class="emoji-icon">🎨</span>
+          <h3>Colors</h3>
+          <div class="status" id="status-colors">Not started</div>
+        </div>
+      </div>
+      <div id="finalBanner" class="final-banner hidden">
+        <div style="font-weight:800; font-size:1.05rem;" id="finalBannerText"></div>
+      </div>
+    </div>
+
+    <!-- QUIZ -->
+    <div id="screen-quiz" class="card hidden">
+      <div class="progress-wrap">
+        <div class="progress-meta">
+          <span id="progressText">Question 1 of 30</span>
+          <span id="quizTitleTag"></span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      </div>
+      <span class="part-label" id="partLabel">Part 1 · Multiple Choice</span>
+      <div class="question-text" id="questionText"></div>
+      <div class="swatch-row hidden" id="swatchRow"></div>
+
+      <div class="options hidden" id="optionsWrap"></div>
+
+      <div class="sa-row hidden" id="saWrap">
+        <input type="text" id="saInput" placeholder="Type your answer...">
+        <button class="btn btn-primary" id="saSubmitBtn">Submit</button>
+      </div>
+
+      <div class="feedback hidden" id="feedbackBox"></div>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" id="quitBtn">Back to menu</button>
+        <button class="btn btn-primary hidden" id="nextBtn">Next</button>
+      </div>
+    </div>
+
+    <!-- RESULT -->
+    <div id="screen-result" class="card hidden">
+      <h2 id="resultTitle" style="font-family:'Kalam',cursive; text-align:center; margin-top:0;"></h2>
+      <div class="score-circle">
+        <div class="num" id="resultScore">0</div>
+        <div class="out-of">out of 100</div>
+      </div>
+      <div class="result-msg" id="resultMsg"></div>
+      <div class="result-sub" id="resultSub"></div>
+      <div class="btn-row" style="justify-content:center;">
+        <button class="btn btn-secondary" id="retryBtn">Try again</button>
+        <button class="btn btn-primary" id="menuBtn">Back to menu</button>
+      </div>
+      <details class="review">
+        <summary>Review my answers</summary>
+        <div id="reviewList"></div>
+      </details>
+    </div>
+
+  </div>
+
+  <div class="chalk-tray" aria-hidden="true">
+    <div class="chalk-stick" style="background:#ff8a80;"></div>
+    <div class="chalk-stick" style="background:#f4c95d;"></div>
+    <div class="chalk-stick" style="background:#7fe0c4;"></div>
+    <div class="chalk-stick" style="background:#7fb6e8;"></div>
+    <div class="chalk-stick" style="background:#f5f3ee;"></div>
+  </div>
+  <footer class="note">Tip: your progress is kept while this page stays open.</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------------- DATA ---------------------- */
+
+  const colorMap = {
+    "Red":"#E53935","Blue":"#1E88E5","Green":"#43A047","Yellow":"#FDD835",
+    "Orange":"#FB8C00","Purple":"#8E24AA","Pink":"#EC407A","Brown":"#6D4C41",
+    "Black":"#212121","White":"#FAFAFA","Gray":"#9E9E9E","Grey":"#9E9E9E",
+    "Magenta":"#E91E63","Silver":"#C0C0C0","Navy":"#000080","Maroon":"#800000",
+    "Beige":"#F5F5DC","Gold":"#FFD700","Lime":"#CDDC39","Violet":"#EE82EE",
+    "Indigo":"#3F51B5","Teal":"#00897B","Cyan":"#00BCD4","Turquoise":"#1DE9B6"
+  };
+
+  function letterAfter(l){ return String.fromCharCode(l.charCodeAt(0)+1); }
+  function letterBefore(l){ return String.fromCharCode(l.charCodeAt(0)-1); }
+
+  function mcQ(question, correct, distractors, opts){
+    return Object.assign({type:"mc", question, correct, distractors}, opts||{});
+  }
+  function saQ(question, accepted, opts){
+    return Object.assign({type:"sa", question, accepted}, opts||{});
+  }
+
+  const alphabetMC = [
+    mcQ("What letter comes after A?","B",["C","Z","D"]),
+    mcQ("What letter comes before C?","B",["C","A","D"]),
+    mcQ("What letter comes after F?","G",["H","E","F"]),
+    mcQ("What letter comes before H?","G",["F","I","H"]),
+    mcQ("What letter comes after J?","K",["I","L","J"]),
+    mcQ("What letter comes before L?","K",["J","M","L"]),
+    mcQ("What letter comes after M?","N",["L","O","M"]),
+    mcQ("What letter comes before O?","N",["M","P","O"]),
+    mcQ("What letter comes after P?","Q",["O","R","P"]),
+    mcQ("What letter comes before R?","Q",["P","S","R"]),
+    mcQ("What letter comes after S?","T",["R","U","S"]),
+    mcQ("What letter comes before U?","T",["S","V","U"]),
+    mcQ("What letter comes after V?","W",["U","X","V"]),
+    mcQ("What letter comes before X?","W",["V","Y","X"]),
+    mcQ("What letter comes after Y?","Z",["X","A","Y"]),
+    mcQ("What letter comes before B?","A",["C","Z","B"]),
+    mcQ("What letter comes after D?","E",["C","F","D"]),
+    mcQ("What letter comes before F?","E",["D","G","F"]),
+    mcQ("What letter comes after I?","J",["H","K","I"]),
+    mcQ("What letter comes before K?","J",["I","L","K"])
+  ];
+
+  const alphabetSA = [
+    saQ("What letter comes after E?",["F"]),
+    saQ("What letter comes before D?",["C"]),
+    saQ("What letter comes after G?",["H"]),
+    saQ("What letter comes before I?",["H"]),
+    saQ("What letter comes after L?",["M"]),
+    saQ("What letter comes before N?",["M"]),
+    saQ("What letter comes after O?",["P"]),
+    saQ("What letter comes before Q?",["P"]),
+    saQ("What letter comes after R?",["S"]),
+    saQ("What letter comes before T?",["S"])
+  ];
+
+  const colorsMC = [
+    mcQ("What color is shown below?","Red",["Blue","Green","Yellow"],{swatches:["Red"]}),
+    mcQ("What color is shown below?","Blue",["Red","Purple","Teal"],{swatches:["Blue"]}),
+    mcQ("What color is shown below?","Green",["Yellow","Blue","Brown"],{swatches:["Green"]}),
+    mcQ("What color is shown below?","Yellow",["Orange","White","Gold"],{swatches:["Yellow"]}),
+    mcQ("What color is shown below?","Orange",["Red","Yellow","Brown"],{swatches:["Orange"]}),
+    mcQ("What color is shown below?","Purple",["Pink","Blue","Indigo"],{swatches:["Purple"]}),
+    mcQ("What color is shown below?","Pink",["Red","Purple","Magenta"],{swatches:["Pink"]}),
+    mcQ("What color is shown below?","Brown",["Black","Orange","Maroon"],{swatches:["Brown"]}),
+    mcQ("What color is shown below?","Black",["Gray","Brown","Navy"],{swatches:["Black"]}),
+    mcQ("What color is shown below?","White",["Gray","Silver","Beige"],{swatches:["White"]}),
+    mcQ("What color do you get when you mix these two colors?","Green",["Purple","Orange","Brown"],{swatches:["Blue","Yellow"]}),
+    mcQ("What color do you get when you mix these two colors?","Purple",["Green","Orange","Pink"],{swatches:["Red","Blue"]}),
+    mcQ("What color do you get when you mix these two colors?","Orange",["Green","Purple","Brown"],{swatches:["Red","Yellow"]}),
+    mcQ("What color do you get when you mix these two colors?","Pink",["Orange","Purple","Gray"],{swatches:["Red","White"]}),
+    mcQ("What color is the sky on a clear day?","Blue",["Green","Gray","Purple"]),
+    mcQ("What color is grass?","Green",["Blue","Brown","Yellow"]),
+    mcQ("What color is a ripe banana?","Yellow",["Green","Orange","White"]),
+    mcQ("What color is a strawberry?","Red",["Pink","Orange","Purple"]),
+    mcQ("What color is fresh snow?","White",["Gray","Blue","Silver"]),
+    mcQ("What color is coal?","Black",["Brown","Gray","Navy"])
+  ];
+
+  const colorsSA = [
+    saQ("Type the name of the color shown below:",["gray","grey"],{swatches:["Gray"]}),
+    saQ("Type the name of the color shown below:",["cyan"],{swatches:["Cyan"]}),
+    saQ("Type the name of the color shown below:",["magenta","pink"],{swatches:["Magenta"]}),
+    saQ("Type the name of the color shown below:",["lime","lime green"],{swatches:["Lime"]}),
+    saQ("Type the name of the color shown below:",["navy","navy blue","dark blue"],{swatches:["Navy"]}),
+    saQ("Type the name of the color shown below:",["maroon","dark red"],{swatches:["Maroon"]}),
+    saQ("Type the name of the color shown below:",["gold"],{swatches:["Gold"]}),
+    saQ("Type the name of the color shown below:",["silver"],{swatches:["Silver"]}),
+    saQ("Type the name of the color shown below:",["violet","purple"],{swatches:["Violet"]}),
+    saQ("Type the name of the color shown below:",["beige","cream","tan"],{swatches:["Beige"]})
+  ];
+
+  const quizzes = {
+    alphabet:{ label:"Before & After Alphabet", mc:alphabetMC, sa:alphabetSA },
+    colors:{ label:"Colors", mc:colorsMC, sa:colorsSA }
+  };
+
+  /* ---------------------- STATE ---------------------- */
+  const state = {
+    name:"",
+    scores:{ alphabet:null, colors:null },
+    current:null,
+    questions:[],
+    index:0,
+    correctCount:0,
+    answered:false,
+    review:[]
+  };
+
+  function shuffle(arr){
+    const a = arr.slice();
+    for(let i=a.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i],a[j]]=[a[j],a[i]];
+    }
+    return a;
+  }
+
+  /* ---------------------- ELEMENTS ---------------------- */
+  const el = id => document.getElementById(id);
+  const screens = {
+    welcome: el("screen-welcome"),
+    menu: el("screen-menu"),
+    quiz: el("screen-quiz"),
+    result: el("screen-result")
+  };
+  function showScreen(name){
+    Object.values(screens).forEach(s=>s.classList.add("hidden"));
+    screens[name].classList.remove("hidden");
+  }
+
+  /* ---------------------- WELCOME ---------------------- */
+  const nameInput = el("nameInput");
+  const startBtn = el("startBtn");
+  nameInput.addEventListener("input", ()=>{
+    startBtn.disabled = nameInput.value.trim().length === 0;
+  });
+  nameInput.addEventListener("keydown", e=>{
+    if(e.key === "Enter" && !startBtn.disabled) startBtn.click();
+  });
+  startBtn.addEventListener("click", ()=>{
+    state.name = nameInput.value.trim();
+    el("menuName").textContent = state.name;
+    renderMenu();
+    showScreen("menu");
+  });
+
+  /* ---------------------- MENU ---------------------- */
+  function renderMenu(){
+    ["alphabet","colors"].forEach(key=>{
+      const statusEl = el("status-"+key);
+      const score = state.scores[key];
+      if(score === null){
+        statusEl.textContent = "Not started";
+        statusEl.classList.remove("done");
+      } else {
+        statusEl.textContent = "Score: "+score+" / 100";
+        statusEl.classList.add("done");
+      }
+    });
+    const bothDone = state.scores.alphabet !== null && state.scores.colors !== null;
+    const banner = el("finalBanner");
+    if(bothDone){
+      const avg = Math.round((state.scores.alphabet + state.scores.colors)/2);
+      el("finalBannerText").textContent = state.name+", your overall average score is "+avg+"/100. "+tierMessage(avg).short;
+      banner.classList.remove("hidden");
+    } else {
+      banner.classList.add("hidden");
+    }
+  }
+  document.querySelectorAll(".quiz-tile").forEach(tile=>{
+    tile.addEventListener("click", ()=> startQuiz(tile.dataset.quiz));
+  });
+
+  /* ---------------------- QUIZ ENGINE ---------------------- */
+  function startQuiz(key){
+    state.current = key;
+    const data = quizzes[key];
+    const mc = data.mc.map(q=>Object.assign({},q));
+    const sa = data.sa.map(q=>Object.assign({},q));
+    state.questions = mc.concat(sa);
+    state.index = 0;
+    state.correctCount = 0;
+    state.review = [];
+    el("quizTitleTag").textContent = data.label;
+    renderQuestion();
+    showScreen("quiz");
+  }
+
+  function currentQ(){ return state.questions[state.index]; }
+
+  function renderQuestion(){
+    state.answered = false;
+    const total = state.questions.length;
+    const q = currentQ();
+    el("progressText").textContent = "Question "+(state.index+1)+" of "+total;
+    el("progressFill").style.width = Math.round((state.index/total)*100)+"%";
+    el("partLabel").textContent = q.type === "mc" ? "Part 1 · Multiple Choice" : "Part 2 · Type the Answer";
+    el("questionText").textContent = q.question;
+
+    const swatchRow = el("swatchRow");
+    swatchRow.innerHTML = "";
+    if(q.swatches && q.swatches.length){
+      swatchRow.classList.remove("hidden");
+      q.swatches.forEach((name,i)=>{
+        if(i>0){
+          const plus = document.createElement("span");
+          plus.className = "plus-sign";
+          plus.textContent = "+";
+          swatchRow.appendChild(plus);
+        }
+        const sw = document.createElement("div");
+        sw.className = "swatch";
+        sw.style.background = colorMap[name] || "#888";
+        if(name==="White"){ sw.style.border = "3px dashed #999"; }
+        swatchRow.appendChild(sw);
+      });
+    } else {
+      swatchRow.classList.add("hidden");
+    }
+
+    const optionsWrap = el("optionsWrap");
+    const saWrap = el("saWrap");
+    optionsWrap.innerHTML = "";
+    el("feedbackBox").classList.add("hidden");
+    el("nextBtn").classList.add("hidden");
+
+    if(q.type === "mc"){
+      saWrap.classList.add("hidden");
+      optionsWrap.classList.remove("hidden");
+      const opts = shuffle([q.correct].concat(q.distractors));
+      opts.forEach(optText=>{
+        const btn = document.createElement("button");
+        btn.className = "option";
+        const label = document.createElement("span");
+        label.textContent = optText;
+        btn.appendChild(label);
+        btn.addEventListener("click", ()=> selectOption(btn, optText, q.correct));
+        optionsWrap.appendChild(btn);
+      });
+    } else {
+      optionsWrap.classList.add("hidden");
+      saWrap.classList.remove("hidden");
+      const saInput = el("saInput");
+      saInput.value = "";
+      saInput.disabled = false;
+      setTimeout(()=>saInput.focus(), 30);
+    }
+  }
+
+  function selectOption(btn, chosen, correct){
+    if(state.answered) return;
+    state.answered = true;
+    const isCorrect = chosen.toLowerCase() === correct.toLowerCase();
+    if(isCorrect) state.correctCount++;
+    state.review.push({q: currentQ().question, your: chosen, correct: correct, ok: isCorrect});
+
+    Array.from(document.querySelectorAll("#optionsWrap .option")).forEach(o=>{
+      o.disabled = true;
+      o.classList.add("disabled");
+    });
+    btn.classList.add("selected");
+    el("nextBtn").classList.remove("hidden");
+  }
+
+  el("saSubmitBtn").addEventListener("click", submitSA);
+  el("saInput").addEventListener("keydown", e=>{ if(e.key==="Enter") submitSA(); });
+
+  function submitSA(){
+    if(state.answered) return;
+    const q = currentQ();
+    const input = el("saInput");
+    const val = input.value.trim().toLowerCase();
+    if(val.length === 0){ input.focus(); return; }
+    state.answered = true;
+    input.disabled = true;
+    const isCorrect = q.accepted.some(a=>a.toLowerCase() === val);
+    if(isCorrect) state.correctCount++;
+    state.review.push({q:q.question, your: input.value.trim() || "(blank)", correct: q.accepted[0], ok:isCorrect});
+    el("nextBtn").classList.remove("hidden");
+  }
+
+  el("nextBtn").addEventListener("click", ()=>{
+    state.index++;
+    if(state.index >= state.questions.length){
+      finishQuiz();
+    } else {
+      renderQuestion();
+    }
+  });
+
+  el("quitBtn").addEventListener("click", ()=>{
+    renderMenu();
+    showScreen("menu");
+  });
+
+  function tierMessage(score){
+    if(score >= 100) return {title:"🎉 PERFECT SCORE!", short:"You're an English superstar!", sub:"Every single answer was correct. Amazing work!"};
+    if(score >= 90) return {title:"🌟 Excellent!", short:"Almost perfect!", sub:"You really know your stuff — just a tiny bit more practice for a perfect score."};
+    if(score >= 75) return {title:"👏 Great job!", short:"You did really well!", sub:"Solid understanding — keep it up!"};
+    if(score >= 60) return {title:"🙂 Good effort!", short:"You're getting there!", sub:"Review the ones you missed and try again."};
+    if(score >= 40) return {title:"📚 Nice try!", short:"Keep practicing!", sub:"A bit more practice will make a big difference."};
+    return {title:"💪 Keep going!", short:"Don't give up!", sub:"Practice makes perfect — try again anytime."};
+  }
+
+  function finishQuiz(){
+    const total = state.questions.length;
+    let score = Math.round((state.correctCount/total)*100);
+    score = Math.max(1, Math.min(100, score));
+    state.scores[state.current] = score;
+
+    const tier = tierMessage(score);
+    el("resultTitle").textContent = quizzes[state.current].label;
+    el("resultScore").textContent = score;
+    el("resultMsg").textContent = tier.title+" "+tier.short;
+    el("resultSub").textContent = state.name+", you answered "+state.correctCount+" out of "+total+" correctly. "+tier.sub;
+
+    const reviewList = el("reviewList");
+    reviewList.innerHTML = "";
+    state.review.forEach(r=>{
+      const div = document.createElement("div");
+      div.className = "review-item " + (r.ok ? "right" : "wrong");
+      div.innerHTML = "<div class='q'>"+escapeHtml(r.q)+"</div><div class='a'>Your answer: "+escapeHtml(r.your)+(r.ok?"":" — Correct answer: "+escapeHtml(r.correct))+"</div>";
+      reviewList.appendChild(div);
+    });
+
+    showScreen("result");
+  }
+
+  function escapeHtml(str){
+    const d = document.createElement("div");
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  el("retryBtn").addEventListener("click", ()=> startQuiz(state.current));
+  el("menuBtn").addEventListener("click", ()=>{
+    renderMenu();
+    showScreen("menu");
+  });
+
+})();
+</script>
+</body>
+</html>
